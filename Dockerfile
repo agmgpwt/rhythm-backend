@@ -1,27 +1,22 @@
-# ---------- 빌드 스테이지 ----------
+# ----------- build stage -----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# csproj 먼저 복사 후 복원
-COPY *.csproj ./
-RUN dotnet restore
+# 전체 소스 복사
+COPY . .
 
-# 나머지 소스 전부 복사
-COPY . ./
+# 프로젝트 이름 명시해서 restore / publish
+RUN dotnet restore "RhythmBackend.csproj"
+RUN dotnet publish "RhythmBackend.csproj" -c Release -o /app/publish
 
-# Release 빌드 & publish
-RUN dotnet publish -c Release -o /app/publish
-
-# ---------- 런타임 스테이지 ----------
+# ----------- runtime stage -----------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# publish 결과만 복사 (wwwroot 포함)
 COPY --from=build /app/publish .
 
-# Render 기본 포트 10000에 바인딩
+# Render 기본 포트 10000
 ENV ASPNETCORE_URLS=http://0.0.0.0:10000
-
 EXPOSE 10000
 
 ENTRYPOINT ["dotnet", "RhythmBackend.dll"]
