@@ -1,20 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 
-// 점수 DTO
-public record ScoreRecordDto(
-    string PlayerName,
-    string SongId,
-    string Difficulty,
-    int Score,
-    int MaxCombo,
-    double Accuracy,
-    int Perfect,
-    int Great,
-    int Good,
-    int Miss
-);
-
-var builder = WebApplication.CreateBuilder(args);
 
 // === SQLite (점수 저장용) ===
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -91,3 +76,17 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 app.Urls.Add($"http://0.0.0.0:{port}");
 
 app.Run();
+
+// 점수 DTO
+public record ScoreRecordDto(
+    string PlayerName,
+    string SongId,
+    string Difficulty,
+    int Score,
+    int MaxCombo,
+    double Accuracy,
+    int Perfect,
+    int Great,
+    int Good,
+    int Miss
+);
