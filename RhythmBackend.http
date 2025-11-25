@@ -1,0 +1,6 @@
+@RhythmBackend_HostAddress = http://localhost:5014
+
+GET {{RhythmBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

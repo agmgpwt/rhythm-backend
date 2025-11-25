@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>리듬게임</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="game-wrapper">
+      <h1>리듬게임</h1>
+
+      <div class="top-bar">
+        <div class="left-controls">
+          <!-- 곡 선택 -->
+          <select id="songSelect">
+            <option value="song1">빌려온 고양이 - ILLIT</option>
+            <option value="song2">샘플 곡 2</option>
+          </select>
+
+          <!-- 난이도 선택 -->
+          <select id="difficultySelect">
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+
+          <button id="startButton">START</button>
+        </div>
+
+        <div class="info">
+          <span>Score: <span id="score">0</span></span>
+          <span>Combo: <span id="combo">0</span></span>
+          <span>Max: <span id="maxCombo">0</span></span>
+        </div>
+      </div>
+
+      <canvas id="gameCanvas" width="420" height="640"></canvas>
+
+      <div id="judgment" class="judgment"></div>
+
+      <div class="key-guide">
+        <div class="key">A</div>
+        <div class="key">S</div>
+        <div class="key">D</div>
+        <div class="key">F</div>
+      </div>
+
+      <p class="hint">
+        A S D F 키로 노트를 타이밍에 맞춰 눌러보세요.<br />
+        노트가 아래 흰 라인을 통과할 때 맞추면 점수가 올라갑니다.
+      </p>
+
+      <!-- 랭킹 영역 -->
+      <div class="leaderboard">
+        <div class="leaderboard-header">
+          <span id="leaderboardSong">곡: -</span>
+          <span id="leaderboardDifficulty">난이도: -</span>
+        </div>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>순위</th>
+              <th>닉네임</th>
+              <th>점수</th>
+              <th>MaxCombo</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr>
+              <td colspan="4" class="lb-empty">기록이 없습니다.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 곡: JS에서 src를 바꿔줌 -->
+      <audio id="music" preload="auto"></audio>
+    </div>
+
+    <!-- 결과 화면 오버레이 -->
+    <div id="resultOverlay" class="result-overlay">
+      <div class="result-panel">
+        <h2>RESULT</h2>
+        <div class="result-main">
+          <div class="result-row">
+            <span>곡</span>
+            <span id="resultSongTitle"></span>
+          </div>
+          <div class="result-row">
+            <span>난이도</span>
+            <span id="resultDifficulty"></span>
+          </div>
+          <div class="result-row">
+            <span>Score</span>
+            <span id="resultScore"></span>
+          </div>
+          <div class="result-row">
+            <span>Max Combo</span>
+            <span id="resultMaxCombo"></span>
+          </div>
+          <div class="result-row">
+            <span>정확도</span>
+            <span id="resultAccuracy"></span>
+          </div>
+          <div class="result-row">
+            <span>Rank</span>
+            <span id="resultRank"></span>
+          </div>
+        </div>
+
+        <div class="result-judge">
+          <div class="judge-line judge-perfect">
+            PERFECT <span id="resultPerfect">0</span>
+          </div>
+          <div class="judge-line judge-great">
+            GREAT <span id="resultGreat">0</span>
+          </div>
+          <div class="judge-line judge-good">
+            GOOD <span id="resultGood">0</span>
+          </div>
+          <div class="judge-line judge-miss">
+            MISS <span id="resultMiss">0</span>
+          </div>
+        </div>
+
+        <div class="result-buttons">
+          <button id="retryButton">다시 플레이</button>
+          <button id="backButton">곡 선택으로</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="game.js"></script>
+  </body>
+</html>

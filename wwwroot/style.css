@@ -1,0 +1,314 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: radial-gradient(circle at top, #222b3f 0, #050711 55%, #000 100%);
+  color: #f8f9fa;
+}
+
+.game-wrapper {
+  width: min(550px, 100% - 32px);
+}
+
+h1 {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.left-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#songSelect,
+#difficultySelect {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+#songSelect option,
+#difficultySelect option {
+  color: #000;
+}
+
+#startButton {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4dabf7, #9775fa);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+}
+
+#startButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+  filter: brightness(1.05);
+}
+
+#startButton:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+
+.info {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.info span span {
+  font-weight: 600;
+}
+
+#gameCanvas {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #05070d;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8);
+}
+
+.judgment {
+  margin-top: 8px;
+  min-height: 1.4em;
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.judgment.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.key-guide {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.key {
+  padding: 6px 0;
+  text-align: center;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), transparent);
+  backdrop-filter: blur(4px);
+  opacity: 0.85;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+/* 오디오 안 보이게 */
+audio {
+  display: none;
+}
+
+/* ====== 랭킹(리더보드) ====== */
+
+.leaderboard {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.78rem;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+
+.leaderboard-header span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.leaderboard-table thead th {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.leaderboard-table tbody tr:nth-child(odd) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.leaderboard-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.lb-empty {
+  padding: 6px 0;
+  opacity: 0.7;
+}
+
+/* ========= 결과 화면 오버레이 ========= */
+
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.78);
+  z-index: 100;
+}
+
+.result-overlay.show {
+  display: flex;
+}
+
+.result-panel {
+  width: min(360px, 90%);
+  background: radial-gradient(circle at top, #343a40 0, #111 55%, #000 100%);
+  border-radius: 18px;
+  padding: 18px 18px 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.result-panel h2 {
+  margin: 0 0 10px;
+  text-align: center;
+  letter-spacing: 0.3em;
+  font-size: 1rem;
+}
+
+.result-main {
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+
+.result-row span:first-child {
+  opacity: 0.8;
+}
+
+.result-row span:last-child {
+  font-weight: 600;
+}
+
+.result-judge {
+  margin: 6px 0 10px;
+  font-size: 0.8rem;
+}
+
+.judge-line {
+  display: flex;
+  justify-content: space-between;
+  margin: 1px 0;
+}
+
+.judge-perfect {
+  color: #ffe066;
+}
+
+.judge-great {
+  color: #74c0fc;
+}
+
+.judge-good {
+  color: #69db7c;
+}
+
+.judge-miss {
+  color: #ff6b6b;
+}
+
+.result-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.result-buttons button {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #4dabf7, #9775fa);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+
+.result-buttons button:last-child {
+  background: linear-gradient(135deg, #868e96, #495057);
+}
