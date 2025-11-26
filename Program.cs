@@ -1,11 +1,15 @@
+using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.StaticFiles;
 
+var builder = WebApplication.CreateBuilder(args);
 
-// === SQLite (점수 저장용) ===
+// ===== DB (SQLite) 등록 =====
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite("Data Source=scores.db"));
 
-// CORS (프론트에서 호출 허용)
+// ===== CORS (개발용: 전체 허용) =====
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -17,18 +21,30 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// CORS 사용
 app.UseCors();
 
-// --- 처음 한 번 DB 파일 & 테이블 생성 ---
+// SQLite DB 파일이 없으면 생성
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 }
 
-// === API ===
+// wwwroot 정적 파일 서빙 (index.html, game.js, cat.weba 등)
+app.UseDefaultFiles();
 
-// 점수 저장
+// .weba 같은 확장자도 서빙할 수 있게 ContentTypeProvider 확장
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".weba"] = "audio/webm";   // .weba -> audio/webm 으로 등록
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider
+});
+
+
+// ===== 점수 저장 API =====
 app.MapPost("/api/score", async (ScoreRecordDto dto, AppDbContext db) =>
 {
     var entity = new ScoreRecord
@@ -45,6 +61,7 @@ app.MapPost("/api/score", async (ScoreRecordDto dto, AppDbContext db) =>
         Great = dto.Great,
         Good = dto.Good,
         Miss = dto.Miss,
+        CreatedAt = DateTime.UtcNow
     };
 
     db.Scores.Add(entity);
@@ -53,31 +70,31 @@ app.MapPost("/api/score", async (ScoreRecordDto dto, AppDbContext db) =>
     return Results.Created($"/api/score/{entity.Id}", entity);
 });
 
-// 랭킹 조회
-app.MapGet("/api/leaderboard", async (string songId, string difficulty, int? limit, AppDbContext db) =>
+// ===== 리더보드 조회 API =====
+app.MapGet("/api/leaderboard", async (
+    string songId,
+    string difficulty,
+    int? limit,
+    AppDbContext db) =>
 {
     var take = limit is > 0 and <= 100 ? limit.Value : 20;
 
-    var query = db.Scores
+    var list = await db.Scores
         .Where(s => s.SongId == songId && s.Difficulty == difficulty)
         .OrderByDescending(s => s.Score)
         .ThenBy(s => s.CreatedAt)
-        .Take(take);
+        .Take(take)
+        .ToListAsync();
 
-    var list = await query.ToListAsync();
     return Results.Ok(list);
 });
 
-// 헬스 체크
-app.MapGet("/", () => "Rhythm Backend is running");
-
-// Render / 컨테이너용 포트 설정
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-app.Urls.Add($"http://0.0.0.0:{port}");
+// 루트 요청은 index.html로 리다이렉트
+app.MapGet("/", () => Results.Redirect("/index.html"));
 
 app.Run();
 
-// 점수 DTO
+// ===== DTO =====
 public record ScoreRecordDto(
     string PlayerName,
     string SongId,

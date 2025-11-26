@@ -1,6 +1,8 @@
 (function () {
   // ★ C# 백엔드 주소 (dotnet run 로그에서 확인한 포트 번호)
-  const API_BASE = "";
+  const API_BASE = window.location.origin;
+
+  console.log("API_BASE =", API_BASE);
 
   // DOM 요소
   const canvas = document.getElementById("gameCanvas");
@@ -48,7 +50,47 @@
   };
 
   // ★ 곡 정보는 백엔드에서 받아와서 여기에 채운다
-  let SONGS = {};
+  // ★ 곡 정보는 여기 상수로 관리한다.
+  const SONGS = {
+   song1: {
+      id: "song1",
+      title: "빌려온 고양이 - ILLIT",
+      file: "cat.weba",     // wwwroot에 있는 파일 이름
+      bpm: 170,
+      offset: 17,
+     lengthSec: 186,
+     patterns: {
+       easy: [
+          [0], [3], [1], [3], [2], [0], [3], [1],
+         [0], [2], [3], [1], [0], [3], [0], [2],
+       ],
+       normal: [
+          [0], [1], [2], [3],
+          [0], [1], [1], [3],
+         [2], [2], [3], [1],
+          [0], [1], [2], [3],
+       ],
+        hard: [
+          [0, 1], [1, 3], [2, 3], [2],
+          [0, 3], [2], [0, 1], [3],
+          [0, 3], [1], [2], [3],
+         [0, 1, 2], [1, 3], [0, 2], [3],
+       ],
+      },
+    },
+
+   // 필요하면 두 번째 곡도 추가할 수 있음
+   // song2: {
+   //   id: "song2",
+   //   title: "샘플 곡 2",
+   //   file: "song2.mp3",
+    //   bpm: 90,
+    //   offset: 2,
+    //   lengthSec: 180,
+    //   patterns: { ... }
+    // },
+  };
+
 
   const HIT_LINE_Y = canvas.height - 120;
   const NOTE_HEIGHT = 24;
@@ -106,49 +148,29 @@
     return null;
   }
 
+  // ★ 백엔드 /api/songs 대신 프론트 상수 SONGS 를 사용하는 버전
   async function loadSongsFromApi() {
-    try {
-      const res = await fetch(`/api/songs`);
-      if (!res.ok) {
-        throw new Error(`곡 목록 불러오기 실패: HTTP ${res.status}`);
-      }
+   console.log("백엔드 대신 프론트 SONGS 상수로 곡 목록을 초기화합니다.");
 
-      const list = await res.json();
-      console.log("songs from api:", list);
+    // 셀렉트 박스 초기화
+    songSelect.innerHTML = "";
 
-      SONGS = {};
-      songSelect.innerHTML = "";
+   // SONGS 객체에 들어있는 곡들을 옵션으로 채우기
+    Object.values(SONGS).forEach((song) => {
+      const option = document.createElement("option");
+      option.value = song.id;      // 예: "song1"
+      option.textContent = song.title; // 예: "샘플 곡 1"
+      songSelect.appendChild(option);
+    });
 
-      list.forEach((s, index) => {
-        // 백엔드에서 내려온 songId/fileName/bpm 등을 JS에서 쓰기 좋은 형태로 재구성
-        SONGS[s.songId] = {
-          id: s.songId,
-          title: s.title,
-          file: s.fileName,
-          bpm: s.bpm,
-          offset: s.offset,
-          lengthSec: s.lengthSec,
-          patterns: s.patterns || {},
-        };
+    // 기본 선택된 곡으로 상태 세팅
+    state.currentSongId = songSelect.value || "song1";
 
-        const opt = document.createElement("option");
-        opt.value = s.songId;
-        opt.textContent = s.title;
-        songSelect.appendChild(opt);
-
-        if (index === 0 && !state.currentSongId) {
-          state.currentSongId = s.songId;
-        }
-      });
-
-      if (state.currentSongId && SONGS[state.currentSongId]) {
-        songSelect.value = state.currentSongId;
-      }
-    } catch (err) {
-      console.error(err);
-      alert("곡 목록을 불러오지 못했습니다. 백엔드를 확인하세요.");
-    }
+    // 곡/난이도에 맞춰 게임 준비 + 랭킹 갱신
+    prepareGame();
+    loadLeaderboard();
   }
+
 
   // ===== 일반 유틸 =====
 
@@ -612,57 +634,61 @@
     const song = getCurrentSong();
     const diff = state.currentDifficulty;
 
-    if (!song) {
-      leaderboardSongEl.textContent = "곡: (없음)";
-      leaderboardDiffEl.textContent = `난이도: ${difficultyLabel(diff)}`;
-      leaderboardBodyEl.innerHTML =
-        '<tr><td colspan="4" class="lb-empty">곡 정보를 불러오지 못했습니다.</td></tr>';
-      return;
-    }
+   leaderboardSongEl.textContent = `곡: ${song.title}`;
+   leaderboardDiffEl.textContent = `난이도: ${difficultyLabel(diff)}`;
 
-    leaderboardSongEl.textContent = `곡: ${song.title}`;
-    leaderboardDiffEl.textContent = `난이도: ${difficultyLabel(diff)}`;
+   if (!API_BASE) {
+     console.warn("API_BASE 가 비어 있어서 리더보드를 불러올 수 없습니다.");
+     leaderboardBodyEl.innerHTML =
+       '<tr><td colspan="4" class="lb-empty">리더보드를 불러오지 못했습니다.</td></tr>';
+     return;
+   }
 
-    fetch(
-      `/api/leaderboard?songId=${song.id}&difficulty=${diff}&limit=10`
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((list) => {
-        leaderboardBodyEl.innerHTML = "";
+   const url = `${API_BASE}/api/leaderboard?songId=${song.id}&difficulty=${diff}&limit=10`;
+   console.log("리더보드 요청 URL:", url);
 
-        if (!Array.isArray(list) || list.length === 0) {
-          const tr = document.createElement("tr");
-          tr.innerHTML =
-            '<td colspan="4" class="lb-empty">기록이 없습니다.</td>';
-          leaderboardBodyEl.appendChild(tr);
-          return;
-        }
+   fetch(url)
+     .then((res) => {
+       if (!res.ok) {
+         console.error("리더보드 HTTP 오류:", res.status, res.statusText);
+         throw new Error(`HTTP ${res.status}`);
+       }
+       return res.json();
+     })
+     .then((list) => {
+       leaderboardBodyEl.innerHTML = "";
 
-        list.forEach((item, index) => {
-          const tr = document.createElement("tr");
-          const rank = index + 1;
-          const name = item.playerName || "NO NAME";
-          const score = item.score ?? 0;
-          const maxCombo = item.maxCombo ?? 0;
+       if (!Array.isArray(list) || list.length === 0) {
+         const tr = document.createElement("tr");
+         tr.innerHTML =
+           '<td colspan="4" class="lb-empty">기록이 없습니다.</td>';
+         leaderboardBodyEl.appendChild(tr);
+         return;
+       }
 
-          tr.innerHTML = `
-            <td>${rank}</td>
-            <td>${name}</td>
-            <td>${score}</td>
-            <td>${maxCombo}</td>
-          `;
-          leaderboardBodyEl.appendChild(tr);
-        });
-      })
-      .catch((err) => {
-        console.error("리더보드 불러오기 실패:", err);
-        leaderboardBodyEl.innerHTML =
-          '<tr><td colspan="4" class="lb-empty">리더보드를 불러오지 못했습니다.</td></tr>';
-      });
+       list.forEach((item, index) => {
+         const tr = document.createElement("tr");
+         const rank = index + 1;
+         const name = item.playerName || "NO NAME";
+         const score = item.score ?? 0;
+         const maxCombo = item.maxCombo ?? 0;
+
+         tr.innerHTML = `
+           <td>${rank}</td>
+           <td>${name}</td>
+           <td>${score}</td>
+           <td>${maxCombo}</td>
+         `;
+         leaderboardBodyEl.appendChild(tr);
+       });
+     })
+     .catch((err) => {
+       console.error("리더보드 불러오기 실패:", err);
+       leaderboardBodyEl.innerHTML =
+         '<tr><td colspan="4" class="lb-empty">리더보드를 불러오지 못했습니다.</td></tr>';
+     });
   }
+
 
   // ===== 이벤트 =====
 
