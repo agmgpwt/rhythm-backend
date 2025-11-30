@@ -42,42 +42,67 @@
 
   const LANES = 4;
 
-  const KEY_TO_LANE = {
-    a: 0,
-    s: 1,
-    d: 2,
-    f: 3,
+  // 🔥 물리 키 코드 기준 매핑 (한/영 상관없이 A,S,K,L 위치 기준)
+  const CODE_TO_LANE = {
+    KeyA: 0, // A
+    KeyS: 1, // S
+    KeyK: 2, // K
+    KeyL: 3, // L
   };
 
-  // ★ 곡 정보는 백엔드에서 받아와서 여기에 채운다
-  // ★ 곡 정보는 여기 상수로 관리한다.
-  const SONGS = {
-   song1: {
-      id: "song1",
-      title: "빌려온 고양이 - ILLIT",
-      file: "cat.weba",     // wwwroot에 있는 파일 이름
-      bpm: 170,
-      offset: 17,
+  // 🔥 e.key 값 기준 매핑 (영문 + 한글 자모)
+  const KEY_TO_LANE = {
+   a: 0,
+   s: 1,
+   k: 2,
+   l: 3,
+   "ㅁ": 0, // 한글자판 A
+   "ㄴ": 1, // 한글자판 S
+   "ㅏ": 2, // 한글자판 K
+   "ㅣ": 3, // 한글자판 L
+  };
+
+
+    const SONGS = {
+    song1: {
+     id: "song1",
+     title: "빌려온 고양이 - ILLIT",
+     file: "cat.weba",
+     bpm: 170,
+     offset: 17,
      lengthSec: 186,
      patterns: {
        easy: [
-          [0], [3], [1], [3], [2], [0], [3], [1],
+         [0], [3], [1], [3], [2], [0], [3], [1],
          [0], [2], [3], [1], [0], [3], [0], [2],
        ],
        normal: [
-          [0], [1], [2], [3],
-          [0], [1], [1], [3],
+         [0], [1], [2], [3],
+         [0], [1], [1], [3],
          [2], [2], [3], [1],
-          [0], [1], [2], [3],
+         [0], [1], [2], [3],
+        ],
+       hard: [
+          [0,2], [1],   [3],   [0,3],
+          [1,3], [2],   [0,2], [3],
+          [0],   [2],   [1,3], [0,3],
+          [2],   [0,2], [1],   [3],
        ],
-        hard: [
-          [0, 1], [1, 3], [2, 3], [2],
-          [0, 3], [2], [0, 1], [3],
-          [0, 3], [1], [2], [3],
-         [0, 1, 2], [1, 3], [0, 2], [3],
-       ],
+
+       // 💀 익스트림 패턴 (많이 / 동시치기 많게)
+       extreme: [
+         [0,2], [0,1,3], [1,3], [0,2],
+         // 2마디: 싱글 섞어서 손 꼬이게
+         [0,3], [1,2],  [1,3], [3],
+         // 3마디: 3~4개 동시 폭탄
+         [0,2], [1,3], [0,1,3], [1,3],
+          // 4마디: 다시 2개 동시 체인
+         [0,2], [1,3], [0,2,3], [1,3],
+        ],
       },
     },
+  
+
 
    // 필요하면 두 번째 곡도 추가할 수 있음
    // song2: {
@@ -178,21 +203,22 @@
     if (diff === "easy") return "Easy";
     if (diff === "normal") return "Normal";
     if (diff === "hard") return "Hard";
+    if (diff === "extreme") return "Extreme";
     return diff;
   }
 
   function ensurePlayerName() {
     // 항상 닉네임을 한 번 물어보게 (지금 값이 있으면 기본값으로 보여줌)
-    const current = state.playerName && state.playerName !== "NO NAME"
+    const current = state.playerName && state.playerName !== "UNKNOWN"
      ? state.playerName
      : "";
 
-   const name = prompt("닉네임을 입력하세요 (빈칸이면 NO NAME):", current);
+   const name = prompt("닉네임을 입력하세요 (빈칸이면 UNKNOWN):", current);
 
     if (!name) {
-      state.playerName = "NO NAME";
+      state.playerName = "UNKNOWN";
     } else {
-      state.playerName = name.trim() || "NO NAME";
+      state.playerName = name.trim() || "UNKNOWN";
     }
 
    console.log("playerName =", state.playerName);
@@ -423,17 +449,28 @@
   }
 
   function onKeyDown(e) {
-    const key = e.key.toLowerCase();
-    const lane = KEY_TO_LANE[key];
-    if (lane === undefined) return;
+   // 디버깅용: 한 번 보고 싶으면 주석 풀어서 확인해봐
+   // console.log("keydown:", e.key, e.code);
+
+   // 1순위: 물리 키 코드 (KeyA, KeyS, KeyK, KeyL)
+   let lane = CODE_TO_LANE[e.code];
+
+   // 2순위: e.key 값 (a,s,k,l, ㅁ,ㄴ,ㅏ,ㅣ 등)
+    if (lane === undefined) {
+      const k = (e.key || "").toLowerCase();
+      lane = KEY_TO_LANE[k];
+    }
+
+    if (lane === undefined) return; // 우리가 안 쓰는 키면 무시
     if (!state.started) return;
 
     e.preventDefault();
 
     const now = performance.now() / 1000;
     const elapsed = now - state.startTime;
-    handleHit(lane, elapsed);
+   handleHit(lane, elapsed);
   }
+
 
   function handleHit(lane, elapsed) {
     let target = null;
